@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Language Translation Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            width: 100%;
+            max-width: 600px;
+        }
+
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            max-width: 150px;
+            height: auto;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+
+        .language-selector {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            color: #34495e;
+            font-weight: 600;
+        }
+
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            color: #2c3e50;
+            background-color: white;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        select:hover {
+            border-color: #3498db;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: #2980b9;
+        }
+
+        .record-button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .record-button:hover {
+            background: #2980b9;
+        }
+
+        .record-button i {
+            font-size: 20px;
+        }
+
+        .status {
+            margin-top: 20px;
+            text-align: center;
+            color: #7f8c8d;
+            font-style: italic;
+        }
+
+        .translation-box {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            min-height: 100px;
+        }
+
+        .translation-box h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .translation-text {
+            color: #34495e;
+            line-height: 1.6;
+        }
+
+        .audio-controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .audio-controls button {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s ease;
+        }
+
+        .audio-controls button:hover {
+            background: #27ae60;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <div class="logo-container">
+            <img src="/app.png" alt="NIT Trichy Logo" class="logo" onerror="this.onerror=null; this.src='https://www.nitt.edu/home/nitt_logo.png';">
+        </div>
+        
+        <h1>Language Translation</h1>
+        
+        <div class="language-selector">
+            <label for="language">Select Target Language:</label>
+            <select id="language">
+                <option value="en-IN">English</option>
+                <option value="hi-IN">Hindi</option>
+                <option value="ta-IN">Tamil</option>
+                <option value="te-IN">Telugu</option>
+                <option value="ml-IN">Malayalam</option>
+                <option value="kn-IN">Kannada</option>
+                <option value="bn-IN">Bengali</option>
+                <option value="gu-IN">Gujarati</option>
+                <option value="mr-IN">Marathi</option>
+                <option value="pa-IN">Punjabi</option>
+            </select>
+        </div>
+
+        <button class="record-button" onclick="startRecording()">
+            <i class="fas fa-microphone"></i>
+            Start Recording
+        </button>
+
+        <div class="status" id="status">
+            Click the button above to start recording
+        </div>
+
+        <div class="translation-box">
+            <h3>Translation</h3>
+            <div class="translation-text" id="translation">
+                Your translation will appear here...
+            </div>
+            <div class="audio-controls">
+                <button onclick="playAudio()" id="playButton" style="display: none;">
+                    <i class="fas fa-play"></i> Play Translation
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isRecording = false;
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let audioContext = null;
+        let currentAudio = null;
+        let isPlaying = false;
+
+        async function startRecording() {
+            const status = document.getElementById('status');
+            const translation = document.getElementById('translation');
+            const language = document.getElementById('language').value;
+            const recordButton = document.querySelector('.record-button');
+            const playButton = document.getElementById('playButton');
+
+            if (!isRecording) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    mediaRecorder = new MediaRecorder(stream);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        audioChunks.push(event.data);
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const formData = new FormData();
+                        formData.append('audio', audioBlob, 'input.wav');
+                        formData.append('language', language);
+
+                        status.textContent = 'Processing audio... This may take a while for longer recordings';
+                        translation.textContent = 'Translating... Please wait';
+                        playButton.style.display = 'none';
+                        recordButton.disabled = true;
+
+                        try {
+                            const response = await fetch('/process-audio', {
+                                method: 'POST',
+                                body: formData
+                            });
+
+                            const result = await response.json();
+
+                            if (response.ok) {
+                                translation.textContent = result.translation;
+                                status.textContent = 'Translation complete';
+                                playButton.style.display = 'inline-block';
+                            } else {
+                                let errorMessage = 'Translation failed';
+                                if (result.error) {
+                                    errorMessage = result.error;
+                                    if (errorMessage.includes('Failed to generate audio')) {
+                                        errorMessage += '. Please try with a shorter recording.';
+                                    }
+                                }
+                                throw new Error(errorMessage);
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            status.textContent = 'Error processing audio';
+                            translation.textContent = error.message || 'An error occurred during translation';
+                            playButton.style.display = 'none';
+                        } finally {
+                            recordButton.disabled = false;
+                        }
+                    };
+
+                    mediaRecorder.start();
+                    isRecording = true;
+                    status.textContent = 'Recording... Click again to stop';
+                    recordButton.innerHTML = '<i class="fas fa-stop"></i> Stop Recording';
+                    recordButton.style.background = '#e74c3c';
+                    playButton.style.display = 'none';
+                } catch (error) {
+                    console.error('Error accessing microphone:', error);
+                    status.textContent = 'Error accessing microphone';
+                }
+            } else {
+                mediaRecorder.stop();
+                isRecording = false;
+                recordButton.innerHTML = '<i class="fas fa-microphone"></i> Start Recording';
+                recordButton.style.background = '#3498db';
+            }
+        }
+
+        function playAudio() {
+            const playButton = document.getElementById('playButton');
+            
+            if (!currentAudio) {
+                currentAudio = new Audio();
+                currentAudio.src = '/output.wav?' + new Date().getTime(); // Add timestamp to prevent caching
+                currentAudio.onended = function() {
+                    isPlaying = false;
+                    playButton.innerHTML = '<i class="fas fa-play"></i> Play Translation';
+                };
+                currentAudio.onerror = function(e) {
+                    console.error('Audio playback error:', e);
+                    playButton.innerHTML = '<i class="fas fa-play"></i> Play Translation';
+                    isPlaying = false;
+                };
+            }
+
+            if (!isPlaying) {
+                currentAudio.play().catch(error => {
+                    console.error('Error playing audio:', error);
+                    playButton.innerHTML = '<i class="fas fa-play"></i> Play Translation';
+                    isPlaying = false;
+                });
+                isPlaying = true;
+                playButton.innerHTML = '<i class="fas fa-pause"></i> Pause Translation';
+            } else {
+                currentAudio.pause();
+                isPlaying = false;
+                playButton.innerHTML = '<i class="fas fa-play"></i> Play Translation';
+            }
+        }
+    </script>
+</body>
+</html> 

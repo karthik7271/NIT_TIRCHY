@@ -1,0 +1,11 @@
+flask==3.0.2
+werkzeug==3.0.1
+requests==2.31.0
+python-dotenv==1.0.1
+pydub==0.25.1
+soundfile==0.12.1
+sounddevice==0.4.6
+sarvamai==0.1.0
+numpy==1.26.4
+pandas==2.2.1
+gunicorn==21.2.0 

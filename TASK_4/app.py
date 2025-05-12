@@ -57,7 +57,7 @@ def translate_audio(audio_file_path, chunk_duration_ms=30 * 1000):
             files = {"file": ("audio.wav", buffer, "audio/wav")}
             
             try:
-                resp = requests.post(api_url, headers=headers, files=files, data=data, timeout=60)
+                resp = requests.post(api_url, headers=headers, files=files, data=data)
                 resp.raise_for_status()
                 json_data = resp.json()
                 chunk_text = json_data.get("transcript", "")
